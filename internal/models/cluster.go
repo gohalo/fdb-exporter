@@ -138,8 +138,8 @@ type ClusterStatus struct {
 	Workload                   Workload           `json:"workload"`
 	Layers                     Layers             `json:"layers"`
 	Processes                  map[string]Process `json:"processes"`
+	Machines                   map[string]Machine `json:"machines"`
 	// Logs                       []Log              `json:"logs"`
-	// Machines                   map[string]Machine `json:"machines"`
 	// Messages                   []ClusterMessage   `json:"messages"`
 	// PageCache                  *PageCache         `json:"page_cache"`
 }
@@ -161,6 +161,10 @@ func (c *ClusterStatus) DumpPromethusMetrics(w io.Writer) error {
 		fmt.Fprintln(w, "fdb_cluster_database_locked 0")
 	}
 
+	fmt.Fprintln(w, "# HELP Redundancy mode for the cluster")
+	fmt.Fprintln(w, "# TYPE fdb_cluster_config_redundancy_mode gauge")
+	fmt.Fprintf(w, "fdb_cluster_config_redundancy_mode{mode=\"%s\"} 1\n", c.Configuration.RedundancyMode)
+
 	fmt.Fprintln(w, "# HELP Count of clients")
 	fmt.Fprintln(w, "# TYPE fdb_cluster_clients_count gauge")
 	fmt.Fprintf(w, "fdb_cluster_clients_count %d\n", c.Clients.Count)
@@ -174,8 +178,19 @@ func (c *ClusterStatus) DumpPromethusMetrics(w io.Writer) error {
 	c.Data.DumpPromethusMetrics(w)
 	c.Qos.DumpPromethusMetrics(w)
 	c.RecoveryState.DumpPromethusMetrics(w)
+
+	fmt.Fprintln(w, "# HELP Total processes")
+	fmt.Fprintln(w, "# TYPE fdb_cluster_process gauge")
+	fmt.Fprintf(w, "fdb_cluster_process %d\n", len(c.Processes))
 	for id, proc := range c.Processes {
 		proc.DumpPromethusMetrics(w, id)
+	}
+
+	fmt.Fprintln(w, "# HELP Total machines")
+	fmt.Fprintln(w, "# TYPE fdb_cluster_machine gauge")
+	fmt.Fprintf(w, "fdb_cluster_machine %d\n", len(c.Machines))
+	for _, machine := range c.Machines {
+		machine.DumpPromethusMetrics(w)
 	}
 	return nil
 }

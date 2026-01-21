@@ -161,18 +161,18 @@ func (n *ProcessNetwork) DumpPromethusMetrics(w io.Writer, id string, p *Process
 }
 
 type GrvLatencyStats struct {
-	Batch   *LatencyStats `json:"batch"`
-	Default *LatencyStats `json:"default"`
+	Batch   LatencyStats `json:"batch"`
+	Default LatencyStats `json:"default"`
 }
 
 type ProcessRole struct {
 	Id   string `json:"id"`
 	Role string `json:"role"`
 	// GRV proxy specific
-	GrvLatencyStatistics *GrvLatencyStats `json:"grv_latency_statistics"`
+	GrvLatencyStatistics GrvLatencyStats `json:"grv_latency_statistics"`
 	// Commit Proxy specific
-	CommitLatencyStatistics  *LatencyStats `json:"commit_latency_statistics"`
-	CommitBatchingWindowSize *LatencyStats `json:"commit_batching_window_size"`
+	CommitLatencyStatistics  LatencyStats `json:"commit_latency_statistics"`
+	CommitBatchingWindowSize LatencyStats `json:"commit_batching_window_size"`
 	// Storage and Log specific
 	KvStoreAvailableBytes   int64           `json:"kvstore_available_bytes"`
 	KvStoreFreeBytes        int64           `json:"kvstore_free_bytes"`
@@ -207,132 +207,236 @@ type ProcessRole struct {
 func (r *ProcessRole) dumpStorageMetrics(w io.Writer, id string, p *Process) error {
 	fmt.Fprintln(w, "# HELP Storage process data lag")
 	fmt.Fprintln(w, "# TYPE fdb_process_storage_data_lag_seconds gauge")
-	fmt.Fprintf(w, "fdb_process_storage_data_lag_seconds{id=\"%s\",address=\"%s\",class_type=\"%s\"} %f\n",
-		id, p.Address, p.ClassType, r.DataLag.Seconds)
+	fmt.Fprintf(w, "fdb_process_storage_data_lag_seconds{id=\"%s\",address=\"%s\",role=\"%s\"} %f\n",
+		id, p.Address, r.Role, r.DataLag.Seconds)
 
 	fmt.Fprintln(w, "# HELP Storage process durability lag")
 	fmt.Fprintln(w, "# TYPE fdb_process_storage_durability_lag_seconds gauge")
-	fmt.Fprintf(w, "fdb_process_storage_durability_lag_seconds{id=\"%s\",address=\"%s\",class_type=\"%s\"} %f\n",
-		id, p.Address, p.ClassType, r.DurabilityLag.Seconds)
+	fmt.Fprintf(w, "fdb_process_storage_durability_lag_seconds{id=\"%s\",address=\"%s\",role=\"%s\"} %f\n",
+		id, p.Address, r.Role, r.DurabilityLag.Seconds)
 
 	fmt.Fprintln(w, "# HELP Storage process input bytes")
 	fmt.Fprintln(w, "# TYPE fdb_process_storage_input_bytes counter")
-	fmt.Fprintf(w, "fdb_process_storage_input_bytes{id=\"%s\",address=\"%s\",class_type=\"%s\"} %d\n",
-		id, p.Address, p.ClassType, r.InputBytes.Counter)
+	fmt.Fprintf(w, "fdb_process_storage_input_bytes{id=\"%s\",address=\"%s\",role=\"%s\"} %d\n",
+		id, p.Address, r.Role, r.InputBytes.Counter)
 
 	fmt.Fprintln(w, "# HELP Storage process durable bytes")
 	fmt.Fprintln(w, "# TYPE fdb_process_storage_durable_bytes counter")
-	fmt.Fprintf(w, "fdb_process_storage_durable_bytes{id=\"%s\",address=\"%s\",class_type=\"%s\"} %d\n",
-		id, p.Address, p.ClassType, r.DurableBytes.Counter)
+	fmt.Fprintf(w, "fdb_process_storage_durable_bytes{id=\"%s\",address=\"%s\",role=\"%s\"} %d\n",
+		id, p.Address, r.Role, r.DurableBytes.Counter)
 
 	fmt.Fprintln(w, "# HELP Storage process stored bytes")
 	fmt.Fprintln(w, "# TYPE fdb_process_storage_stored_bytes gauge")
-	fmt.Fprintf(w, "fdb_process_storage_stored_bytes{id=\"%s\",address=\"%s\",class_type=\"%s\"} %d\n",
-		id, p.Address, p.ClassType, r.StoredBytes)
+	fmt.Fprintf(w, "fdb_process_storage_stored_bytes{id=\"%s\",address=\"%s\",role=\"%s\"} %d\n",
+		id, p.Address, r.Role, r.StoredBytes)
 
 	fmt.Fprintln(w, "# HELP Storage process KV store available bytes")
 	fmt.Fprintln(w, "# TYPE fdb_process_storage_kvstore_available_bytes gauge")
-	fmt.Fprintf(w, "fdb_process_storage_kvstore_available_bytes{id=\"%s\",address=\"%s\",class_type=\"%s\"} %d\n",
-		id, p.Address, p.ClassType, r.KvStoreAvailableBytes)
+	fmt.Fprintf(w, "fdb_process_storage_kvstore_available_bytes{id=\"%s\",address=\"%s\",role=\"%s\"} %d\n",
+		id, p.Address, r.Role, r.KvStoreAvailableBytes)
 
 	fmt.Fprintln(w, "# HELP Storage process KV store free bytes")
 	fmt.Fprintln(w, "# TYPE fdb_process_storage_kvstore_free_bytes gauge")
-	fmt.Fprintf(w, "fdb_process_storage_kvstore_free_bytes{id=\"%s\",address=\"%s\",class_type=\"%s\"} %d\n",
-		id, p.Address, p.ClassType, r.KvStoreFreeBytes)
+	fmt.Fprintf(w, "fdb_process_storage_kvstore_free_bytes{id=\"%s\",address=\"%s\",role=\"%s\"} %d\n",
+		id, p.Address, r.Role, r.KvStoreFreeBytes)
 
 	fmt.Fprintln(w, "# HELP Storage process KV store total bytes")
 	fmt.Fprintln(w, "# TYPE fdb_process_storage_kvstore_total_bytes gauge")
-	fmt.Fprintf(w, "fdb_process_storage_kvstore_total_bytes{id=\"%s\",address=\"%s\",class_type=\"%s\"} %d\n",
-		id, p.Address, p.ClassType, r.KvStoreTotalBytes)
+	fmt.Fprintf(w, "fdb_process_storage_kvstore_total_bytes{id=\"%s\",address=\"%s\",role=\"%s\"} %d\n",
+		id, p.Address, r.Role, r.KvStoreTotalBytes)
 
 	fmt.Fprintln(w, "# HELP Storage process KV store used bytes")
 	fmt.Fprintln(w, "# TYPE fdb_process_storage_kvstore_used_bytes gauge")
-	fmt.Fprintf(w, "fdb_process_storage_kvstore_used_bytes{id=\"%s\",address=\"%s\",class_type=\"%s\"} %d\n",
-		id, p.Address, p.ClassType, r.KvStoreUsedBytes)
+	fmt.Fprintf(w, "fdb_process_storage_kvstore_used_bytes{id=\"%s\",address=\"%s\",role=\"%s\"} %d\n",
+		id, p.Address, r.Role, r.KvStoreUsedBytes)
 
 	fmt.Fprintln(w, "# HELP Storage process fetched versions count")
 	fmt.Fprintln(w, "# TYPE fdb_process_storage_fetched_versions counter")
-	fmt.Fprintf(w, "fdb_process_storage_fetched_versions{id=\"%s\",address=\"%s\",class_type=\"%s\"} %d\n",
-		id, p.Address, p.ClassType, r.FetchedVersions.Counter)
+	fmt.Fprintf(w, "fdb_process_storage_fetched_versions{id=\"%s\",address=\"%s\",role=\"%s\"} %d\n",
+		id, p.Address, r.Role, r.FetchedVersions.Counter)
 
 	fmt.Fprintln(w, "# HELP Storage process fetches from logs count")
 	fmt.Fprintln(w, "# TYPE fdb_process_storage_fetches_from_logs counter")
-	fmt.Fprintf(w, "fdb_process_storage_fetches_from_logs{id=\"%s\",address=\"%s\",class_type=\"%s\"} %d\n",
-		id, p.Address, p.ClassType, r.FetchesFromLogs.Counter)
+	fmt.Fprintf(w, "fdb_process_storage_fetches_from_logs{id=\"%s\",address=\"%s\",role=\"%s\"} %d\n",
+		id, p.Address, r.Role, r.FetchesFromLogs.Counter)
 
 	fmt.Fprintln(w, "# HELP Storage process low priority queries count")
 	fmt.Fprintln(w, "# TYPE fdb_process_storage_low_priority_queries counter")
-	fmt.Fprintf(w, "fdb_process_storage_low_priority_queries{id=\"%s\",address=\"%s\",class_type=\"%s\"} %d\n",
-		id, p.Address, p.ClassType, r.LowPriorityQueries.Counter)
+	fmt.Fprintf(w, "fdb_process_storage_low_priority_queries{id=\"%s\",address=\"%s\",role=\"%s\"} %d\n",
+		id, p.Address, r.Role, r.LowPriorityQueries.Counter)
 
 	fmt.Fprintln(w, "# HELP Storage process mean read latency in seconds")
 	fmt.Fprintln(w, "# TYPE fdb_process_storage_read_latency_mean gauge")
-	fmt.Fprintf(w, "fdb_process_storage_read_latency_mean{id=\"%s\",address=\"%s\",class_type=\"%s\"} %f\n",
-		id, p.Address, p.ClassType, r.ReadLatencyStatistics.Mean)
+	fmt.Fprintf(w, "fdb_process_storage_read_latency_mean{id=\"%s\",address=\"%s\",role=\"%s\"} %f\n",
+		id, p.Address, r.Role, r.ReadLatencyStatistics.Mean)
 
 	fmt.Fprintln(w, "# HELP Storage process median read latency in seconds")
 	fmt.Fprintln(w, "# TYPE fdb_process_storage_read_latency_median gauge")
-	fmt.Fprintf(w, "fdb_process_storage_read_latency_median{id=\"%s\",address=\"%s\",class_type=\"%s\"} %f\n",
-		id, p.Address, p.ClassType, r.ReadLatencyStatistics.Median)
+	fmt.Fprintf(w, "fdb_process_storage_read_latency_median{id=\"%s\",address=\"%s\",role=\"%s\"} %f\n",
+		id, p.Address, r.Role, r.ReadLatencyStatistics.Median)
 
 	fmt.Fprintln(w, "# HELP Storage process p95 read latency in seconds")
 	fmt.Fprintln(w, "# TYPE fdb_process_storage_read_latency_p95 gauge")
-	fmt.Fprintf(w, "fdb_process_storage_read_latency_p95{id=\"%s\",address=\"%s\",class_type=\"%s\"} %f\n",
-		id, p.Address, p.ClassType, r.ReadLatencyStatistics.P95)
+	fmt.Fprintf(w, "fdb_process_storage_read_latency_p95{id=\"%s\",address=\"%s\",role=\"%s\"} %f\n",
+		id, p.Address, r.Role, r.ReadLatencyStatistics.P95)
 
 	fmt.Fprintln(w, "# HELP Storage process p99 read latency in seconds")
 	fmt.Fprintln(w, "# TYPE fdb_process_storage_read_latency_p99 gauge")
-	fmt.Fprintf(w, "fdb_process_storage_read_latency_p99{id=\"%s\",address=\"%s\",class_type=\"%s\"} %f\n",
-		id, p.Address, p.ClassType, r.ReadLatencyStatistics.P99)
+	fmt.Fprintf(w, "fdb_process_storage_read_latency_p99{id=\"%s\",address=\"%s\",role=\"%s\"} %f\n",
+		id, p.Address, r.Role, r.ReadLatencyStatistics.P99)
 
 	fmt.Fprintln(w, "# HELP Storage process max read latency in seconds")
 	fmt.Fprintln(w, "# TYPE fdb_process_storage_read_latency_max gauge")
-	fmt.Fprintf(w, "fdb_process_storage_read_latency_max{id=\"%s\",address=\"%s\",class_type=\"%s\"} %f\n",
-		id, p.Address, p.ClassType, r.ReadLatencyStatistics.Max)
+	fmt.Fprintf(w, "fdb_process_storage_read_latency_max{id=\"%s\",address=\"%s\",role=\"%s\"} %f\n",
+		id, p.Address, r.Role, r.ReadLatencyStatistics.Max)
 	return nil
 }
 
 func (r *ProcessRole) dumpLogMetrics(w io.Writer, id string, p *Process) error {
 	fmt.Fprintln(w, "# HELP Log process queue disk available bytes")
 	fmt.Fprintln(w, "# TYPE fdb_process_log_queue_disk_available_bytes gauge")
-	fmt.Fprintf(w, "fdb_process_log_queue_disk_available_bytes{id=\"%s\",address=\"%s\",class_type=\"%s\"} %d\n",
-		id, p.Address, p.ClassType, r.QueueDiskAvailableBytes)
+	fmt.Fprintf(w, "fdb_process_log_queue_disk_available_bytes{id=\"%s\",address=\"%s\",role=\"%s\"} %d\n",
+		id, p.Address, r.Role, r.QueueDiskAvailableBytes)
 
 	fmt.Fprintln(w, "# HELP Log process queue disk free bytes")
 	fmt.Fprintln(w, "# TYPE fdb_process_log_queue_disk_free_bytes gauge")
-	fmt.Fprintf(w, "fdb_process_log_queue_disk_free_bytes{id=\"%s\",address=\"%s\",class_type=\"%s\"} %d\n",
-		id, p.Address, p.ClassType, r.QueueDiskFreeBytes)
+	fmt.Fprintf(w, "fdb_process_log_queue_disk_free_bytes{id=\"%s\",address=\"%s\",role=\"%s\"} %d\n",
+		id, p.Address, r.Role, r.QueueDiskFreeBytes)
 
 	fmt.Fprintln(w, "# HELP Log process queue disk total bytes")
 	fmt.Fprintln(w, "# TYPE fdb_process_log_queue_disk_total_bytes gauge")
-	fmt.Fprintf(w, "fdb_process_log_queue_disk_total_bytes{id=\"%s\",address=\"%s\",class_type=\"%s\"} %d\n",
-		id, p.Address, p.ClassType, r.QueueDiskTotalBytes)
+	fmt.Fprintf(w, "fdb_process_log_queue_disk_total_bytes{id=\"%s\",address=\"%s\",role=\"%s\"} %d\n",
+		id, p.Address, r.Role, r.QueueDiskTotalBytes)
 
 	fmt.Fprintln(w, "# HELP Log process queue disk used bytes")
 	fmt.Fprintln(w, "# TYPE fdb_process_log_queue_disk_used_bytes gauge")
-	fmt.Fprintf(w, "fdb_process_log_queue_disk_used_bytes{id=\"%s\",address=\"%s\",class_type=\"%s\"} %d\n",
-		id, p.Address, p.ClassType, r.QueueDiskUsedBytes)
+	fmt.Fprintf(w, "fdb_process_log_queue_disk_used_bytes{id=\"%s\",address=\"%s\",role=\"%s\"} %d\n",
+		id, p.Address, r.Role, r.QueueDiskUsedBytes)
 
 	fmt.Fprintln(w, "# HELP Log process input bytes")
 	fmt.Fprintln(w, "# TYPE fdb_process_log_input_bytes counter")
-	fmt.Fprintf(w, "fdb_process_log_input_bytes{id=\"%s\",address=\"%s\",class_type=\"%s\"} %d\n",
-		id, p.Address, p.ClassType, r.InputBytes.Counter)
+	fmt.Fprintf(w, "fdb_process_log_input_bytes{id=\"%s\",address=\"%s\",role=\"%s\"} %d\n",
+		id, p.Address, r.Role, r.InputBytes.Counter)
 
 	fmt.Fprintln(w, "# HELP Log process durable bytes")
 	fmt.Fprintln(w, "# TYPE fdb_process_log_durable_bytes counter")
-	fmt.Fprintf(w, "fdb_process_log_durable_bytes{id=\"%s\",address=\"%s\",class_type=\"%s\"} %d\n",
-		id, p.Address, p.ClassType, r.DurableBytes.Counter)
+	fmt.Fprintf(w, "fdb_process_log_durable_bytes{id=\"%s\",address=\"%s\",role=\"%s\"} %d\n",
+		id, p.Address, r.Role, r.DurableBytes.Counter)
+	return nil
+}
+
+func (r *ProcessRole) dumpCommitProxyMetrics(w io.Writer, id string, p *Process) error {
+	fmt.Fprintln(w, "# HELP Commit proxy mean batching window size in seconds")
+	fmt.Fprintln(w, "# TYPE fdb_process_commit_proxy_batching_window_size_mean gauge")
+	fmt.Fprintf(w, "fdb_process_commit_proxy_batching_window_size_mean{id=\"%s\",address=\"%s\",role=\"%s\"} %f\n",
+		id, p.Address, r.Role, r.CommitBatchingWindowSize.Mean)
+
+	fmt.Fprintln(w, "# HELP Commit proxy median batching window size in seconds")
+	fmt.Fprintln(w, "# TYPE fdb_process_commit_proxy_batching_window_size_median gauge")
+	fmt.Fprintf(w, "fdb_process_commit_proxy_batching_window_size_median{id=\"%s\",address=\"%s\",role=\"%s\"} %f\n",
+		id, p.Address, r.Role, r.CommitBatchingWindowSize.Median)
+
+	fmt.Fprintln(w, "# HELP Commit proxy p95 batching window size in seconds")
+	fmt.Fprintln(w, "# TYPE fdb_process_commit_proxy_batching_window_size_p95 gauge")
+	fmt.Fprintf(w, "fdb_process_commit_proxy_batching_window_size_p95{id=\"%s\",address=\"%s\",role=\"%s\"} %f\n",
+		id, p.Address, r.Role, r.CommitBatchingWindowSize.P95)
+
+	fmt.Fprintln(w, "# HELP Commit proxy p99 batching window size in seconds")
+	fmt.Fprintln(w, "# TYPE fdb_process_commit_proxy_batching_window_size_p99 gauge")
+	fmt.Fprintf(w, "fdb_process_commit_proxy_batching_window_size_p99{id=\"%s\",address=\"%s\",role=\"%s\"} %f\n",
+		id, p.Address, r.Role, r.CommitBatchingWindowSize.P99)
+
+	fmt.Fprintln(w, "# HELP Commit proxy max batching window size in seconds")
+	fmt.Fprintln(w, "# TYPE fdb_process_commit_proxy_batching_window_size_max gauge")
+	fmt.Fprintf(w, "fdb_process_commit_proxy_batching_window_size_max{id=\"%s\",address=\"%s\",role=\"%s\"} %f\n",
+		id, p.Address, r.Role, r.CommitBatchingWindowSize.Max)
+
+	fmt.Fprintln(w, "# HELP Commit proxy mean commit latency in seconds")
+	fmt.Fprintln(w, "# TYPE fdb_process_commit_proxy_commit_latency_mean gauge")
+	fmt.Fprintf(w, "fdb_process_commit_proxy_commit_latency_mean{id=\"%s\",address=\"%s\",role=\"%s\"} %f\n",
+		id, p.Address, r.Role, r.CommitLatencyStatistics.Mean)
+
+	fmt.Fprintln(w, "# HELP Commit proxy median commit latency in seconds")
+	fmt.Fprintln(w, "# TYPE fdb_process_commit_proxy_commit_latency_median gauge")
+	fmt.Fprintf(w, "fdb_process_commit_proxy_commit_latency_median{id=\"%s\",address=\"%s\",role=\"%s\"} %f\n",
+		id, p.Address, r.Role, r.CommitLatencyStatistics.Median)
+
+	fmt.Fprintln(w, "# HELP Commit proxy p95 commit latency in seconds")
+	fmt.Fprintln(w, "# TYPE fdb_process_commit_proxy_commit_latency_p95 gauge")
+	fmt.Fprintf(w, "fdb_process_commit_proxy_commit_latency_p95{id=\"%s\",address=\"%s\",role=\"%s\"} %f\n",
+		id, p.Address, r.Role, r.CommitLatencyStatistics.P95)
+
+	fmt.Fprintln(w, "# HELP Commit proxy p99 commit latency in seconds")
+	fmt.Fprintln(w, "# TYPE fdb_process_commit_proxy_commit_latency_p99 gauge")
+	fmt.Fprintf(w, "fdb_process_commit_proxy_commit_latency_p99{id=\"%s\",address=\"%s\",role=\"%s\"} %f\n",
+		id, p.Address, r.Role, r.CommitLatencyStatistics.P99)
+
+	fmt.Fprintln(w, "# HELP Commit proxy max commit latency in seconds")
+	fmt.Fprintln(w, "# TYPE fdb_process_commit_proxy_commit_latency_max gauge")
+	fmt.Fprintf(w, "fdb_process_commit_proxy_commit_latency_max{id=\"%s\",address=\"%s\",role=\"%s\"} %f\n",
+		id, p.Address, r.Role, r.CommitLatencyStatistics.Max)
+	return nil
+}
+
+func (r *ProcessRole) dumpGRVProxyMetrics(w io.Writer, id string, p *Process) error {
+	fmt.Fprintln(w, "# HELP GRV proxy mean batch priority latency in seconds")
+	fmt.Fprintln(w, "# TYPE fdb_process_grv_proxy_batch_latency_mean gauge")
+	fmt.Fprintf(w, "fdb_process_grv_proxy_batch_latency_mean{id=\"%s\",address=\"%s\",role=\"%s\"} %f\n",
+		id, p.Address, r.Role, r.GrvLatencyStatistics.Batch.Mean)
+
+	fmt.Fprintln(w, "# HELP GRV proxy median batch priority latency in seconds")
+	fmt.Fprintln(w, "# TYPE fdb_process_grv_proxy_batch_latency_median gauge")
+	fmt.Fprintf(w, "fdb_process_grv_proxy_batch_latency_median{id=\"%s\",address=\"%s\",role=\"%s\"} %f\n",
+		id, p.Address, r.Role, r.GrvLatencyStatistics.Batch.Median)
+
+	fmt.Fprintln(w, "# HELP GRV proxy p95 batch priority latency in seconds")
+	fmt.Fprintln(w, "# TYPE fdb_process_grv_proxy_batch_latency_p95 gauge")
+	fmt.Fprintf(w, "fdb_process_grv_proxy_batch_latency_p95{id=\"%s\",address=\"%s\",role=\"%s\"} %f\n",
+		id, p.Address, r.Role, r.GrvLatencyStatistics.Batch.P95)
+
+	fmt.Fprintln(w, "# HELP GRV proxy p99 batch priority latency in seconds")
+	fmt.Fprintln(w, "# TYPE fdb_process_grv_proxy_batch_latency_p99 gauge")
+	fmt.Fprintf(w, "fdb_process_grv_proxy_batch_latency_p99{id=\"%s\",address=\"%s\",role=\"%s\"} %f\n",
+		id, p.Address, r.Role, r.GrvLatencyStatistics.Batch.P99)
+
+	fmt.Fprintln(w, "# HELP GRV proxy mean default priority latency in seconds")
+	fmt.Fprintln(w, "# TYPE fdb_process_grv_proxy_default_latency_mean gauge")
+	fmt.Fprintf(w, "fdb_process_grv_proxy_default_latency_mean{id=\"%s\",address=\"%s\",role=\"%s\"} %f\n",
+		id, p.Address, r.Role, r.GrvLatencyStatistics.Batch.Mean)
+
+	fmt.Fprintln(w, "# HELP GRV proxy median default priority latency in seconds")
+	fmt.Fprintln(w, "# TYPE fdb_process_grv_proxy_default_latency_median gauge")
+	fmt.Fprintf(w, "fdb_process_grv_proxy_default_latency_median{id=\"%s\",address=\"%s\",role=\"%s\"} %f\n",
+		id, p.Address, r.Role, r.GrvLatencyStatistics.Batch.Median)
+
+	fmt.Fprintln(w, "# HELP GRV proxy p95 default priority latency in seconds")
+	fmt.Fprintln(w, "# TYPE fdb_process_grv_proxy_default_latency_p95 gauge")
+	fmt.Fprintf(w, "fdb_process_grv_proxy_default_latency_p95{id=\"%s\",address=\"%s\",role=\"%s\"} %f\n",
+		id, p.Address, r.Role, r.GrvLatencyStatistics.Batch.P95)
+
+	fmt.Fprintln(w, "# HELP GRV proxy p99 default priority latency in seconds")
+	fmt.Fprintln(w, "# TYPE fdb_process_grv_proxy_default_latency_p99 gauge")
+	fmt.Fprintf(w, "fdb_process_grv_proxy_default_latency_p99{id=\"%s\",address=\"%s\",role=\"%s\"} %f\n",
+		id, p.Address, r.Role, r.GrvLatencyStatistics.Batch.P99)
+
+	fmt.Fprintln(w, "# HELP GRV proxy max default priority latency in seconds")
+	fmt.Fprintln(w, "# TYPE fdb_process_grv_proxy_default_latency_max gauge")
+	fmt.Fprintf(w, "fdb_process_grv_proxy_default_latency_max{id=\"%s\",address=\"%s\",role=\"%s\"} %f\n",
+		id, p.Address, r.Role, r.GrvLatencyStatistics.Batch.Max)
+
 	return nil
 }
 
 func (r *ProcessRole) DumpPromethusMetrics(w io.Writer, id string, p *Process) error {
-	switch p.ClassType {
+	switch r.Role {
 	case "storage":
 		r.dumpStorageMetrics(w, id, p)
 	case "log":
 		r.dumpLogMetrics(w, id, p)
-		// } else if p.ClassType == "commit_proxy" {
-		// } else if p.ClassType == "grv_proxy" {
+	case "commit_proxy":
+		r.dumpCommitProxyMetrics(w, id, p)
+	case "grv_proxy":
+		r.dumpGRVProxyMetrics(w, id, p)
 	}
 	return nil
 }
