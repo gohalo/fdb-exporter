@@ -1,21 +1,11 @@
-BUILD_PARAMS="-tags=release -buildvcs=false"
+BUILD_PARAMS="-buildvcs=false"
 
-.PHONY: all build clean fmt test
+.PHONY: all build clean
 
 all: build
 
 build:
-	go build "${BUILD_PARAMS}" .
+	go build "${BUILD_PARAMS}" -v ./cmd/fdb-exporter
 
 clean:
 	rm -f ./fdb-exporter
-
-deps:
-	bash -x scripts/install_deps.sh
-
-fmt:
-	find . -name \*.go -not -path bin/ -exec goimports -w {} \;
-
-test: deps
-	# Set TEST_JSON_OUTPUT to -json to have a json output from the test
-	go test "${TEST_PARAM}" "./..."
