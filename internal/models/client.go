@@ -55,11 +55,16 @@ func (c *ClientStatus) IsValid() bool {
 }
 
 func (c *ClientStatus) DumpPromethusMetrics(w io.Writer) error {
+	fmt.Fprintln(w, "# HELP Whether or not database is available. 1 if is, 0 otherwise")
 	fmt.Fprintln(w, "# TYPE fdb_client_database_status_available gauge")
 	if c.DatabaseStatus.Available {
 		fmt.Fprintln(w, "fdb_client_database_status_available 1")
 	} else {
-		fmt.Fprintln(w, "fdb_client_database_status_available 0n")
+		fmt.Fprintln(w, "fdb_client_database_status_available 0")
 	}
+
+	fmt.Fprintln(w, "# HELP The number of coordinators")
+	fmt.Fprintln(w, "# TYPE fdb_client_coordinators gauge")
+	fmt.Fprintf(w, "fdb_client_coordinators %d\n", len(c.Coordinators.Coordinators))
 	return nil
 }
