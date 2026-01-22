@@ -67,9 +67,10 @@ func fdbInit() error {
 		log.Error().Str("FDB_API_VERSION", apiver).Msg("Could not convert api version to integer")
 		return err
 	}
-	fdb.MustAPIVersion(version)
-
 	clusterfile := getFromEnvWithDefault("FDB_CLUSTER_FILE", *fdbClusterFile)
+	log.Info().Msgf("Connect to fdb with version=%d cluster=%s.", version, clusterfile)
+
+	fdb.MustAPIVersion(version)
 	if db_, err := fdb.OpenDatabase(clusterfile); err != nil {
 		log.Info().Str("FDB_CLUSTER_FILE", clusterfile).Msgf("Open with cluster file failed, %v.", err)
 		return err
@@ -80,6 +81,7 @@ func fdbInit() error {
 }
 
 func main() {
+	flag.Parse()
 	if err := fdbInit(); err != nil {
 		return
 	}

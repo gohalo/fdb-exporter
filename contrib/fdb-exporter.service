@@ -1,0 +1,17 @@
+[Unit]
+Description=Expose fdb metrics in Prometheus format
+
+[Service]
+User=olap
+Group=olap
+Restart=always
+RestartSec=30
+TimeoutStopSec=600
+
+Environment="FDB_CLUSTER_FILE=/home/olap/fdb/home/conf/fdb.cluster"
+Environment="LD_LIBRARY_PATH=/home/olap/fdb/home"
+
+ExecStart=/home/olap/fdb/home/fdb-exporter
+
+[Install]
+WantedBy=multi-user.target
