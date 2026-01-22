@@ -1,5 +1,7 @@
 English | [中文](README-CN.md)
 
+![dashboard](./docs/grafana.png)
+
 This project is designed to transparently convert FoundationDB monitoring metrics into Prometheus-compatible metrics. It sends `status json` request to FDB each time Prometheus pulls monitoring data, converts the response into the corresponding Prometheus format, and performs only transparent forwarding without any additional processing in between.
 
 # Installation
